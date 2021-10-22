@@ -4,6 +4,8 @@ import {StyleSheet, Text, Image, View, Button, Alert} from 'react-native';
 import {Colors} from 'react-native/Libraries/NewAppScreen';
 import Potion from '../assets/Potion.png';
 import Scroll from '../assets/Scroll.png';
+import fetchMonsterById from './CombatService';
+import monsterImages from './MonsterImageService';
 
 const styles = StyleSheet.create({
   monster: {
@@ -64,9 +66,10 @@ const styles = StyleSheet.create({
 
 });
 const Combat = () => {
-  const [monsterName, setMonsterName] = useState('Slime');
+  const [monster, setMonster] = useState({});
   const [monsterMaxHealth, setMonsterMaxHealth] = useState(25);
   const [monsterHealth, setMonsterHealth] = useState(1);
+  const [monsterImage, setMonsterImage] = useState(require('../assets/Placeholder.png'));
   const [playerHealth, setPlayerHealth] = useState(1);
   const [playerMaxHealth, setPlayerMaxHealth] = useState(50);
   const [potionCount, setPotionCount] = useState(3);
@@ -75,10 +78,21 @@ const Combat = () => {
   const [playerTurn, setPlayerTurn] = useState(false);
   const [monsterTurn, setMonsterTurn] = useState(false);
 
+  function randomIntFromInterval(min, max) {
+    return Math.floor(Math.random() * (max - min + 1) + min);
+  }
+
 useEffect(() => {
+  const monsterId = randomIntFromInterval(1, 5);
+  fetchMonsterById(setMonster, monsterId);
+  setMonsterImage()
+}, [killCount]);
+
+useEffect(() => {
+  setMonsterMaxHealth(monster.health);
   setMonsterHealth(monsterMaxHealth);
   setPlayerTurn(true);
-}, [monsterMaxHealth]);
+}, [monster.health, monsterMaxHealth]);
 
 useEffect(() => {
   setPlayerHealth(playerMaxHealth);
@@ -94,12 +108,12 @@ useEffect(() => {
 
 useEffect(() => {
   if (monsterHealth <= 0) {
-    Alert.alert(`You defeated ${monsterName}`);
+    Alert.alert(`You defeated ${monster.name}`);
     setMonsterTurn(false);
     setMonsterHealth(monsterMaxHealth);
     setKillCount(killCount + 1);
   }
-}, [monsterHealth, monsterMaxHealth, monsterName, killCount]);
+}, [monsterHealth, monsterMaxHealth, killCount, monster.name]);
 
 useEffect(() => {
   if (playerHealth <= 0) {
@@ -136,17 +150,15 @@ const playerHeal = () => {
   }
 };
 
-
-
   return (
     <View>
       <Text style={styles.monsterName}>
-        {monsterName}
+        {monster.name}
       </Text>
       <View style={styles.monster}>
       <Image
       style={styles.monster}
-      source={require('../assets/Slime.png')} />
+      source={monsterImages(monster.name)} />
       </View>
       <Text style={styles.monsterHealthBar}>{monsterHealth}/{monsterMaxHealth}</Text>
       <View style={styles.attackButton}>
