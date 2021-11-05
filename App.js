@@ -1,8 +1,7 @@
 import React from 'react';
 import {ScrollView, StatusBar, useColorScheme} from 'react-native';
-
 import {Colors} from 'react-native/Libraries/NewAppScreen';
-import Combat from './android/app/src/components/Combat';
+import Combat from './android/app/src/components/combat/Combat';
 
 const App = () => {
   const isDarkMode = useColorScheme() === 'dark';
