@@ -3,6 +3,7 @@ import updatePlayerById from './UpdatePlayerService';
 export default function levelCheck(
   player,
   playerExperience,
+  updatedPlayer,
   setPlayer,
   setPlayerExperience,
 ) {

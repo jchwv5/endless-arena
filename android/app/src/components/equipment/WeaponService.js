@@ -1,8 +1,7 @@
 export default function fetchWeaponById(setWeapon, id) {
-  return fetch(`https://oio--monsters-api.herokuapp.com/weapons/${id}`)
+  return fetch(`https://infinite-arena-api.herokuapp.com/items/${id}`)
     .then(response => response.json())
     .then(responseJson => {
-      console.log(responseJson);
       setWeapon(responseJson);
     })
     .catch(error => {

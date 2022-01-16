@@ -1,9 +1,9 @@
-export default function fetchArmorById(setArmor, id) {
-  return fetch(`https://oio--monsters-api.herokuapp.com/armor/${id}`)
+export default function fetchArmorById(setArmor, setDone, id) {
+  return fetch(`https://infinite-arena-api.herokuapp.com/items/${id}`)
     .then(response => response.json())
     .then(responseJson => {
-      console.log(responseJson);
       setArmor(responseJson);
+      setDone(true);
     })
     .catch(error => {
       console.error(error);

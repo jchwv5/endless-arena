@@ -1,22 +1,71 @@
 import React from 'react';
-import {ScrollView, StatusBar, useColorScheme} from 'react-native';
-import {Colors} from 'react-native/Libraries/NewAppScreen';
+import {NavigationContainer} from '@react-navigation/native';
+import {createNativeStackNavigator} from '@react-navigation/native-stack';
 import Combat from './android/app/src/components/combat/Combat';
+import HomeScreen from './android/app/src/components/homescreen/HomeScreen';
+import ArenaLanding from './android/app/src/components/arenalanding/ArenaLanding';
+import CharacterScreen from './android/app/src/components/character-screen/CharacterScreen';
+import Equipment from './android/app/src/components/equipment/Equipment';
+import Loading from './android/app/src/components/loading/Loading';
+import Inventory from './android/app/src/inventory/Inventory';
 
 const App = () => {
-  const isDarkMode = useColorScheme() === 'dark';
-
-  const backgroundStyle = {
-    backgroundColor: Colors.black,
-  };
+  const Stack = createNativeStackNavigator();
 
   return (
-    <ScrollView
-      contentInsetAdjustmentBehavior="automatic"
-      style={backgroundStyle}>
-      <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} />
-      <Combat />
-    </ScrollView>
+    <NavigationContainer>
+      <Stack.Navigator>
+        <Stack.Screen
+          name="Home"
+          component={HomeScreen}
+          options={{
+            headerShown: false,
+          }}
+        />
+        <Stack.Screen
+          name="Loading"
+          component={Loading}
+          options={{
+            headerShown: false,
+          }}
+        />
+        <Stack.Screen
+          name="Landing"
+          component={ArenaLanding}
+          options={{
+            headerShown: false,
+          }}
+        />
+        <Stack.Screen
+          name="Inventory"
+          component={Inventory}
+          options={{
+            headerShown: false,
+          }}
+        />
+        <Stack.Screen
+          name="Character"
+          component={CharacterScreen}
+          options={{
+            headerShown: false,
+          }}
+        />
+        <Stack.Screen
+          name="Equipment"
+          component={Equipment}
+          options={{
+            headerShown: false,
+          }}
+        />
+        <Stack.Screen
+          name="Combat"
+          component={Combat}
+          options={{
+            headerShown: false,
+          }}
+        />
+      </Stack.Navigator>
+    </NavigationContainer>
   );
 };
 

@@ -1,16 +1,14 @@
 /* eslint-disable prettier/prettier */
 import React, { useEffect, useState, useRef } from 'react';
-import { StyleSheet, Text, Image, View, Button, Alert, ScrollView } from 'react-native';
+import { StyleSheet, Text, Image, View, Button, Modal, Alert, ScrollView, TouchableHighlight } from 'react-native';
 import { Colors } from 'react-native/Libraries/NewAppScreen';
 import Potion from '../../assets/Potion.png';
 import Scroll from '../../assets/Scroll.png';
+import Flee from '../../assets/Flee.png';
 import fetchMonsterById from '../monster/MonsterService';
 import monsterImages from '../monster/MonsterImageService';
-import fetchPlayerById from '../player/PlayerService';
 import updatePlayerById from '../player/UpdatePlayerService';
-import fetchWeaponById from '../equipment/WeaponService';
-import fetchArmorById from '../equipment/ArmorService';
-import fetchShieldById from '../equipment/ShieldService';
+
 
 const styles = StyleSheet.create({
   monster: {
@@ -35,7 +33,14 @@ const styles = StyleSheet.create({
     height: 25,
     width: 25,
   },
+  flee: {
+    marginRight: 10,
+    marginLeft: 250,
+    height: 50,
+    width: 50,
+  },
   scroll: {
+    marginLeft: 10,
     marginRight: 10,
     height: 25,
     width: 25,
@@ -83,31 +88,53 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
+  fleeContainer: {
+    flex: 1,
+    justifyContent: 'right',
+    padding: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
   attackButton: {
     marginHorizontal: 75,
   },
   healButton: {
     marginHorizontal: 75,
   },
+  centeredView: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 22,
+  },
+  modalView: {
+    margin: 20,
+    backgroundColor: 'white',
+    borderRadius: 20,
+    padding: 35,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
+  },
 
 });
-const Combat = () => {
+const Combat = ({ route, navigation }) => {
+  const [modalVisible, setModalVisible] = useState(false);
+  const {player, weapon, shield, armor, setPlayer} = route.params;
   const [combatMessages, setCombatMessages] = useState([]);
   const [monster, setMonster] = useState({});
-  const [player, setPlayer] = useState({});
   const [playerLevel, setPlayerLevel] = useState(0);
   const [playerMaxHealth, setPlayerMaxHealth] = useState(1);
   const [playerHealth, setPlayerHealth] = useState(1);
   const [playerAtk, setPlayerAtk] = useState(0);
-  const [playerAgi, setPlayerAgi] = useState(0);
-  const [playerIntel, setPlayerIntel] = useState(0);
-  const [playerWill, setPlayerWill] = useState(0);
-  const [playerCon, setPlayerCon] = useState(0);
   const [playerDef, setPlayerDef] = useState(0);
   const [playerExperience, setPlayerExperience] = useState(0);
-  const [weapon, setWeapon] = useState({});
-  const [shield, setShield] = useState({});
-  const [armor, setArmor] = useState({});
   const [monsterMaxHealth, setMonsterMaxHealth] = useState(25);
   const [monsterHealth, setMonsterHealth] = useState(1);
   const [potionCount, setPotionCount] = useState(3);
@@ -122,16 +149,12 @@ const Combat = () => {
   }
 
   useEffect(() => {
-    fetchPlayerById(setPlayer, 1);
     setPlayerLevel(player.level);
     setPlayerExperience(player.exp);
-    setPlayerAtk(player.atk);
-    setPlayerDef((player.con - 1) / 2);
+    setPlayerAtk(Math.round((player.str - 1) / 2));
+    setPlayerDef(Math.round((player.con - 1) / 2));
     setPlayerMaxHealth(player.health);
-    fetchWeaponById(setWeapon, player.weaponId);
-    fetchArmorById(setArmor, player.armorId);
-    fetchShieldById(setShield, player.shieldId);
-  }, [player.armorId, player.atk, player.con, player.exp, player.health, player.level, player.shieldId, player.weaponId]);
+  }, [player.con, player.exp, player.health, player.level, player.name, player.str]);
 
   useEffect(() => {
     const monsterId = randomIntFromInterval(1, 5);
@@ -179,11 +202,14 @@ const Combat = () => {
   }, [monsterHealth, monsterMaxHealth, killCount, monster.name, playerExperience, playerLevel, playerMaxHealth, playerAtk, playerDef, monster.exp]);
 
   useEffect(() => {
+    if (killCount !== 0 ){
+    let levelUp = false;
     if (playerExperience >= 100) {
-      setPlayerExperience(playerExperience - 100);
-      updatePlayerById(player, playerExperience, setPlayer);
+      levelUp = true;
     }
-  }, [player, playerExperience]);
+    updatePlayerById(player, playerExperience, levelUp, setPlayer);}
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [killCount]);
 
   useEffect(() => {
     if (playerHealth <= 0) {
@@ -250,7 +276,33 @@ const Combat = () => {
   };
 
   return (
-    <View>
+    <ScrollView backgroundColor="black">
+      <Modal
+        transparent={true}
+        visible={modalVisible}
+        onRequestClose={() => {
+          setModalVisible(!modalVisible);
+        }}>
+          <View style={styles.centeredView}>
+          <View style={styles.modalView}>
+            <Text style={styles.modalText}>Are you sure you want to flee?</Text>
+            <TouchableHighlight
+              style={[styles.button, styles.buttonClose]}
+              onPress={() =>  navigation.navigate('Loading', {
+                target: 'Landing',
+              })}
+            >
+              <Text style={styles.textStyle}>Yes</Text>
+            </TouchableHighlight>
+            <TouchableHighlight
+              style={[styles.button, styles.buttonClose]}
+              onPress={() =>  setModalVisible(!modalVisible)}
+            >
+              <Text style={styles.textStyle}>No</Text>
+            </TouchableHighlight>
+          </View>
+        </View>
+        </Modal>
       <ScrollView style={styles.scrollView} ref={scrollViewRef}>
         <Text style={styles.combatLog}>
           {combatMessages}
@@ -283,7 +335,7 @@ const Combat = () => {
           onPress={() => playerSpell()} />
       </View>
       <View style={styles.attackButton}>
-        <Text style={styles.playerName}>{player.name} - Level {playerLevel}</Text>
+        <Text style={styles.playerName}>{player.name} - Level {player.level}</Text>
         <Text style={styles.playerHealthBar}>{playerHealth}/{playerMaxHealth}</Text>
         <Text style={styles.playerExperienceBar}>{playerExperience}/100</Text>
       </View>
@@ -292,14 +344,20 @@ const Combat = () => {
           source={Potion}
           style={styles.potion} />
         <Text style={styles.inventory}>x{potionCount}</Text>
-      </View>
-      <View style={styles.inventoryContainer}>
         <Image
           source={Scroll}
           style={styles.scroll} />
         <Text style={styles.inventory}>x{scrollCount}</Text>
       </View>
-    </View>
+      <View style={styles.inventoryContainer}>
+      <TouchableHighlight
+            onPress={() => setModalVisible(!modalVisible)}>
+        <Image
+          source={Flee}
+          style={styles.flee} />
+      </TouchableHighlight>
+      </View>
+    </ScrollView>
   );
 };
 export default Combat;
