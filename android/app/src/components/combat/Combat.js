@@ -8,6 +8,8 @@ import Flee from '../../assets/Flee.png';
 import fetchMonsterById from '../monster/MonsterService';
 import monsterImages from '../monster/MonsterImageService';
 import updatePlayerById from '../player/UpdatePlayerService';
+import lootCheck from './LootCheck';
+import fetchLootTableByMonsterId from './LootService';
 
 
 const styles = StyleSheet.create({
@@ -126,7 +128,7 @@ const styles = StyleSheet.create({
 });
 const Combat = ({ route, navigation }) => {
   const [modalVisible, setModalVisible] = useState(false);
-  const {player, weapon, shield, armor, setPlayer} = route.params;
+  const {player, weapon, shield, armor, inventoryItems, setPlayer, setInventoryItems} = route.params;
   const [combatMessages, setCombatMessages] = useState([]);
   const [monster, setMonster] = useState({});
   const [playerLevel, setPlayerLevel] = useState(0);
@@ -142,6 +144,8 @@ const Combat = ({ route, navigation }) => {
   const [killCount, setKillCount] = useState(0);
   const [playerTurn, setPlayerTurn] = useState(false);
   const [monsterTurn, setMonsterTurn] = useState(false);
+  const [lootTable, setLootTable] = useState([]);
+  const [loot] = useState([]);
   const scrollViewRef = useRef();
 
   function randomIntFromInterval(min, max) {
@@ -159,6 +163,7 @@ const Combat = ({ route, navigation }) => {
   useEffect(() => {
     const monsterId = randomIntFromInterval(1, 5);
     fetchMonsterById(setMonster, monsterId);
+    fetchLootTableByMonsterId(setLootTable, monsterId);
   }, [killCount]);
 
   useEffect(() => {
@@ -195,10 +200,12 @@ const Combat = ({ route, navigation }) => {
     if (monsterHealth <= 0) {
       Alert.alert(`You defeated ${monster.name}`);
       setMonsterTurn(false);
+      lootCheck(monster.commonLootTableRolls, lootTable, loot);
       setMonsterHealth(monsterMaxHealth);
       setKillCount(killCount + 1);
       setPlayerExperience(playerExperience + monster.exp);
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [monsterHealth, monsterMaxHealth, killCount, monster.name, playerExperience, playerLevel, playerMaxHealth, playerAtk, playerDef, monster.exp]);
 
   useEffect(() => {
@@ -272,6 +279,17 @@ const Combat = ({ route, navigation }) => {
       setPlayerTurn(false);
       setMonsterTurn(true);
       addCombatMessage(player.name, 'healed', 'themself', '30');
+    }
+  };
+
+  const gatherLoot = () => {
+    for (const entry of loot) {
+      inventoryItems.some(inventoryItem => {
+        if (inventoryItem.hasOwnProperty(inventoryItem.id === entry)){
+          inventoryItem.quantity = (inventoryItem.quantity + 1);
+        }
+      });
+
     }
   };
 

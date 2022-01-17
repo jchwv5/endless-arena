@@ -35,14 +35,17 @@ const Loading = ({route, navigation}) => {
         player !== undefined &&
         armor !== undefined &&
         weapon !== undefined &&
-        shield !== undefined
+        shield !== undefined && 
+        inventoryItems !== undefined
       ) {
         navigation.navigate(target, {
           player: player,
           weapon: weapon,
           shield: shield,
           armor: armor,
+          inventoryItems: inventoryItems,
           setPlayer: setPlayer,
+          setInventoryItems: setInventoryItems,
         });
       }
     }
