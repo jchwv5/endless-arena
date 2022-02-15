@@ -10,6 +10,9 @@ import monsterImages from '../monster/MonsterImageService';
 import updatePlayerById from '../player/UpdatePlayerService';
 import lootCheck from './LootCheck';
 import fetchLootTableByMonsterId from './LootService';
+import updateInventoryById from '../../inventory/UpdateInventoryService';
+import itemImages from '../equipment/ItemImages';
+import { v4 as uuidv4 } from 'uuid';
 
 
 const styles = StyleSheet.create({
@@ -20,7 +23,6 @@ const styles = StyleSheet.create({
     width: 180,
     alignItems: 'center',
   },
-
   scrollView: {
     marginTop: 15,
     backgroundColor: 'grey',
@@ -29,7 +31,6 @@ const styles = StyleSheet.create({
     borderColor: 'white',
     borderWidth: 3,
   },
-
   potion: {
     marginRight: 10,
     height: 25,
@@ -124,10 +125,42 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 5,
   },
-
+  inventoryItemContainer: {
+    flexBasis: '25%',
+    alignItems: 'center',
+  },
+  inventoryMenu: {
+    marginTop: 10,
+    marginHorizontal: 5,
+    backgroundColor: 'blue',
+    borderRadius: 25,
+    borderWidth: 5,
+    borderColor: 'white',
+  },
+  quantityLabel: {
+    color: Colors.white,
+    marginTop: 10,
+    fontSize: 8,
+    textAlign: 'center',
+  },
+  itemImage: {
+    marginTop: 5,
+    height: 40,
+    width: 40,
+  },
+  itemName: {
+    color: Colors.white,
+    marginBottom: 15,
+    marginLeft: 5,
+    marginTop: 5,
+    fontSize: 8,
+    textAlign: 'center',
+  },
 });
+
 const Combat = ({ route, navigation }) => {
-  const [modalVisible, setModalVisible] = useState(false);
+  const [fleeModalVisible, setFleeModalVisible] = useState(false);
+  const [lootModalVisible, setLootModalVisible] = useState(false);
   const {player, weapon, shield, armor, inventoryItems, setPlayer, setInventoryItems} = route.params;
   const [combatMessages, setCombatMessages] = useState([]);
   const [monster, setMonster] = useState({});
@@ -145,7 +178,8 @@ const Combat = ({ route, navigation }) => {
   const [playerTurn, setPlayerTurn] = useState(false);
   const [monsterTurn, setMonsterTurn] = useState(false);
   const [lootTable, setLootTable] = useState([]);
-  const [loot] = useState([]);
+  const [loot, setLoot] = useState([]);
+  const [lootNames, setLootNames] = useState([]);
   const scrollViewRef = useRef();
 
   function randomIntFromInterval(min, max) {
@@ -283,13 +317,22 @@ const Combat = ({ route, navigation }) => {
   };
 
   const gatherLoot = () => {
-    for (const entry of loot) {
-      inventoryItems.some(inventoryItem => {
-        if (inventoryItem.hasOwnProperty(inventoryItem.id === entry)){
-          inventoryItem.quantity = (inventoryItem.quantity + 1);
-        }
-      });
+      for (const entry of loot) {
+        lootNames.push(entry.name);
+        const found = inventoryItems.some(inventoryItem => {
+          if (inventoryItem.item.id === entry.id){
+            inventoryItem.quantity = (inventoryItem.quantity + 1);
+            return true;
+          }
+        });
+        if (!found) {inventoryItems.push({'id': uuidv4(), 'item' : entry, 'quantity': 1}
+        );}
+    }
+  };
 
+  const updateInventory = () => {
+    for (const inventoryItem of inventoryItems) {
+      updateInventoryById(inventoryItem.id, player, inventoryItem.item, inventoryItem.quantity);
     }
   };
 
@@ -297,26 +340,55 @@ const Combat = ({ route, navigation }) => {
     <ScrollView backgroundColor="black">
       <Modal
         transparent={true}
-        visible={modalVisible}
+        visible={fleeModalVisible}
         onRequestClose={() => {
-          setModalVisible(!modalVisible);
+          setFleeModalVisible(!fleeModalVisible);
         }}>
           <View style={styles.centeredView}>
           <View style={styles.modalView}>
             <Text style={styles.modalText}>Are you sure you want to flee?</Text>
             <TouchableHighlight
               style={[styles.button, styles.buttonClose]}
-              onPress={() =>  navigation.navigate('Loading', {
+              onPress={() => { navigation.navigate('Loading', {
                 target: 'Landing',
-              })}
+              }); updateInventory();} }
             >
               <Text style={styles.textStyle}>Yes</Text>
             </TouchableHighlight>
             <TouchableHighlight
               style={[styles.button, styles.buttonClose]}
-              onPress={() =>  setModalVisible(!modalVisible)}
+              onPress={() =>  setFleeModalVisible(!fleeModalVisible)}
             >
               <Text style={styles.textStyle}>No</Text>
+            </TouchableHighlight>
+          </View>
+        </View>
+        </Modal>
+        <Modal
+        transparent={true}
+        visible={lootModalVisible}
+        onRequestClose={() => {
+          setLootModalVisible(!lootModalVisible);
+        }}>
+          <View style={styles.inventoryMenu}>
+          {loot.map(lootItem => (
+            <View style={styles.inventoryItemContainer}>
+              <Text style={styles.quantityLabel}>{lootItem.quantity}</Text>
+              <Image
+                style={styles.itemImage}
+                source={itemImages(lootItem.name)}
+              />
+              <Text style={styles.itemName} key={lootItem.id}>
+                {lootItem.name}
+              </Text>
+            </View>
+          ))}
+          <View style={styles.modalView}>
+            <TouchableHighlight
+              style={[styles.button, styles.buttonClose]}
+              onPress={() =>  {setLootModalVisible(!lootModalVisible); setLoot([]); }}
+            >
+              <Text style={styles.textStyle}>Collect</Text>
             </TouchableHighlight>
           </View>
         </View>
@@ -326,15 +398,27 @@ const Combat = ({ route, navigation }) => {
           {combatMessages}
         </Text>
       </ScrollView>
-      <Text style={styles.monsterName}>
-        {monster.name}
-      </Text>
-      <View style={styles.monster}>
-        <Image
-          style={styles.monster}
-          source={monsterImages(monster.name)} />
-      </View>
-      <Text style={styles.monsterHealthBar}>{monsterHealth}/{monsterMaxHealth}</Text>
+      { loot.length === 0 && <View>
+        <Text style={styles.monsterName}>
+          {monster.name}
+        </Text>
+        <View style={styles.monster}>
+          <Image
+            style={styles.monster}
+            source={monsterImages(monster.name)} />
+        </View>
+          <Text style={styles.monsterHealthBar}>{monsterHealth}/{monsterMaxHealth}</Text>
+      </View>}
+      { loot.length > 0 && <View>
+        <View style={styles.monster}>
+        <TouchableHighlight
+            onPress={() => { gatherLoot(); setLootModalVisible(!lootModalVisible); } }>
+          <Image
+            style={styles.monster}
+            source={require('../../assets/Loot.png')} />
+        </TouchableHighlight>
+        </View>
+      </View>}
       <View style={styles.attackButton}>
         <Button
           title="Attack"
@@ -369,7 +453,7 @@ const Combat = ({ route, navigation }) => {
       </View>
       <View style={styles.inventoryContainer}>
       <TouchableHighlight
-            onPress={() => setModalVisible(!modalVisible)}>
+            onPress={() => setFleeModalVisible(!fleeModalVisible)}>
         <Image
           source={Flee}
           style={styles.flee} />

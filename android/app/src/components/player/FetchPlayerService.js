@@ -2,15 +2,15 @@ import fetchWeaponById from '../equipment/WeaponService';
 import fetchShieldById from '../equipment/ShieldService';
 import fetchArmorById from '../equipment/ArmorService';
 
-export default async function fetchPlayerById(
+export default async function fetchPlayerByEmail(
   setPlayer,
   setWeapon,
   setShield,
   setArmor,
   setDone,
-  id,
+  email,
 ) {
-  return fetch(`https://infinite-arena-api.herokuapp.com/players/${id}`)
+  return fetch(`https://infinite-arena-api.herokuapp.com/players/${email}`)
     .then(response => response.json())
     .then(responseJson => {
       setPlayer(responseJson);

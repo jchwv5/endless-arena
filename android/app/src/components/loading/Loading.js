@@ -1,7 +1,7 @@
 import React, {useEffect, useState} from 'react';
 import {ActivityIndicator, StyleSheet, View} from 'react-native';
 import fetchInventoryByPlayerId from '../../inventory/InventoryService';
-import fetchPlayerById from '../player/FetchPlayerService';
+import fetchPlayerByEmail from '../player/FetchPlayerService';
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -25,9 +25,21 @@ const Loading = ({route, navigation}) => {
   const [done, setDone] = useState(false);
 
   useEffect(() => {
-    fetchPlayerById(setPlayer, setWeapon, setShield, setArmor, setDone, 1);
-    fetchInventoryByPlayerId(setInventoryItems, 1);
+    fetchPlayerByEmail(
+      setPlayer,
+      setWeapon,
+      setShield,
+      setArmor,
+      setDone,
+      'jchwv5@gmail.com',
+    );
   }, []);
+
+  useEffect(() => {
+    if (player !== undefined) {
+      fetchInventoryByPlayerId(setInventoryItems, player.id);
+    }
+  }, [player]);
 
   useEffect(() => {
     if (target === 'Character' || 'Combat' || 'Landing') {
@@ -35,7 +47,7 @@ const Loading = ({route, navigation}) => {
         player !== undefined &&
         armor !== undefined &&
         weapon !== undefined &&
-        shield !== undefined && 
+        shield !== undefined &&
         inventoryItems !== undefined
       ) {
         navigation.navigate(target, {
