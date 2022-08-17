@@ -1,12 +1,5 @@
 import React from 'react';
-import {
-  StyleSheet,
-  Text,
-  Image,
-  ScrollView,
-  TouchableHighlight,
-  View,
-} from 'react-native';
+import {StyleSheet, Text, Image, TouchableHighlight, View} from 'react-native';
 import {Colors} from 'react-native/Libraries/NewAppScreen';
 import Back from '../../assets/Back.png';
 import itemImages from '../equipment/ItemImages';

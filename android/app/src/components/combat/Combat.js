@@ -263,7 +263,6 @@ const Combat = ({ route, navigation }) => {
     setMonsterTurn(false);
     setPlayerTurn(true);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [monsterHealth, monsterTurn, playerHealth]);
 
   useEffect(() => {
@@ -275,7 +274,6 @@ const Combat = ({ route, navigation }) => {
       setKillCount(killCount + 1);
       setPlayerExperience(playerExperience + monster.exp);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [monsterHealth, monsterMaxHealth, killCount, monster.name, playerExperience, playerLevel, playerMaxHealth, playerAtk, playerDef, monster.exp]);
 
   useEffect(() => {
@@ -285,7 +283,6 @@ const Combat = ({ route, navigation }) => {
       levelUp = true;
     }
     updatePlayerById(player, playerExperience, levelUp, setPlayer);}
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [killCount]);
 
   useEffect(() => {
