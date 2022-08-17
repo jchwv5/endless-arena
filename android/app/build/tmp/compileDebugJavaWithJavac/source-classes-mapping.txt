@@ -1,0 +1,14 @@
+com/oio/ReactNativeFlipper.java
+ com.oio.ReactNativeFlipper
+ com.oio.ReactNativeFlipper$1
+ com.oio.ReactNativeFlipper$2
+ com.oio.ReactNativeFlipper$2$1
+com/oio/MainApplication.java
+ com.oio.MainApplication
+ com.oio.MainApplication$1
+com/oio/MainActivity.java
+ com.oio.MainActivity
+com/oio/BuildConfig.java
+ com.oio.BuildConfig
+com/facebook/react/PackageList.java
+ com.facebook.react.PackageList
