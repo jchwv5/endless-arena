@@ -20,6 +20,7 @@ import BossButton from '../../assets/BossButton.png';
 import SwampButton from '../../assets/SwampButton.png';
 import DesertButton from '../../assets/DesertButton.png';
 import VolcanoButton from '../../assets/VolcanoButton.png';
+import DisabledButton from '../../assets/DisabledButton.png';
 
 const styles = StyleSheet.create({
   container: {
@@ -170,7 +171,9 @@ const CombatLanding = ({route, navigation}) => {
                   armor: player.armor,
                 })
               }>
-              <Image source={CaveButton} style={styles.logo} />
+              <ImageBackground source={CaveButton} style={styles.logo}>
+                <Image source={DisabledButton} style={styles.logo} />
+              </ImageBackground>
             </TouchableOpacity>
           </View>
           <View style={styles.bossButtonContainer}>
@@ -183,7 +186,9 @@ const CombatLanding = ({route, navigation}) => {
                   armor: player.armor,
                 })
               }>
-              <Image source={BossButton} style={styles.logo} />
+              <ImageBackground source={BossButton} style={styles.logo}>
+                <Image source={DisabledButton} style={styles.logo} />
+              </ImageBackground>
             </TouchableOpacity>
           </View>
           <View style={styles.swampButtonContainer}>
@@ -196,13 +201,16 @@ const CombatLanding = ({route, navigation}) => {
                   armor: player.armor,
                 })
               }>
-              <Image source={SwampButton} style={styles.logo} />
+              <ImageBackground source={SwampButton} style={styles.logo}>
+                <Image source={DisabledButton} style={styles.logo} />
+              </ImageBackground>
             </TouchableOpacity>
           </View>
         </View>
         <View style={styles.desertVolcanoButtonContainer}>
           <View style={styles.desertButtonContainer}>
             <TouchableOpacity
+              disabled={!(player.level >= 2)}
               onPress={() =>
                 navigation.navigate('Combat', {
                   player: player,
@@ -211,7 +219,11 @@ const CombatLanding = ({route, navigation}) => {
                   armor: player.armor,
                 })
               }>
-              <Image source={DesertButton} style={styles.logo} />
+              <ImageBackground source={DesertButton} style={styles.logo}>
+                {player.level < 2 && (
+                  <Image source={DisabledButton} style={styles.logo} />
+                )}
+              </ImageBackground>
             </TouchableOpacity>
           </View>
           <View style={styles.volcanoButtonContainer}>
@@ -224,7 +236,9 @@ const CombatLanding = ({route, navigation}) => {
                   armor: player.armor,
                 })
               }>
-              <Image source={VolcanoButton} style={styles.logo} />
+              <ImageBackground source={VolcanoButton} style={styles.logo}>
+                <Image source={DisabledButton} style={styles.logo} />
+              </ImageBackground>
             </TouchableOpacity>
           </View>
         </View>
