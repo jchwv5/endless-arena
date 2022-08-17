@@ -1,15 +1,17 @@
 import React from 'react';
-import {
-  StyleSheet,
-  Text,
-  ScrollView,
-  TouchableHighlight,
-  Image,
-} from 'react-native';
+import {StyleSheet, Text, TouchableHighlight, View, Image} from 'react-native';
 import {Colors} from 'react-native/Libraries/NewAppScreen';
 import Back from '../../assets/Back.png';
 
 const styles = StyleSheet.create({
+  equipmentMenu: {
+    marginTop: 10,
+    marginHorizontal: 5,
+    backgroundColor: 'blue',
+    borderRadius: 25,
+    borderWidth: 5,
+    borderColor: 'white',
+  },
   container: {
     flex: 1,
     flexDirection: 'row',
@@ -38,26 +40,23 @@ const styles = StyleSheet.create({
   },
 });
 
-const Equipment = ({route, navigation}) => {
-  const {player, weapon, shield, armor} = route.params;
+const Equipment = props => {
+  const {player} = props;
+  const {equipmentModalVisible} = props;
+  const {setEquipmentModalVisible} = props;
   return (
-    <ScrollView backgroundColor="black">
+    <View style={styles.equipmentMenu}>
       <TouchableHighlight
-        onPress={() =>
-          navigation.navigate('Landing', {
-            player: player,
-            weapon: weapon,
-            shield: shield,
-            armor: armor,
-          })
-        }>
+        onPress={() => setEquipmentModalVisible(!equipmentModalVisible)}>
         <Image style={styles.backIcon} source={Back} />
       </TouchableHighlight>
       <Text style={styles.labels}>{player.name}</Text>
-      <Text style={styles.labels}>Weapon - {weapon.name} </Text>
-      <Text style={styles.labels}>Armor - {armor.name} </Text>
-      <Text style={styles.labels}>Shield - {shield.name} </Text>
-    </ScrollView>
+      <Text style={styles.labels}>
+        Right Weapon - {player.rightWeapon.name}{' '}
+      </Text>
+      <Text style={styles.labels}>Left Weapon - {player.leftWeapon.name} </Text>
+      <Text style={styles.labels}>Armor - {player.armor.name} </Text>
+    </View>
   );
 };
 

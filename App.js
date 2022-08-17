@@ -7,7 +7,9 @@ import ArenaLanding from './android/app/src/components/arenalanding/ArenaLanding
 import CharacterScreen from './android/app/src/components/character-screen/CharacterScreen';
 import Equipment from './android/app/src/components/equipment/Equipment';
 import Loading from './android/app/src/components/loading/Loading';
-import Inventory from './android/app/src/inventory/Inventory';
+import Inventory from './android/app/src/components/inventory/Inventory';
+import Menu from './android/app/src/components/menu/Menu';
+import CombatLanding from './android/app/src/components/combatlanding/CombatLanding';
 
 const App = () => {
   const Stack = createNativeStackNavigator();
@@ -60,6 +62,20 @@ const App = () => {
         <Stack.Screen
           name="Combat"
           component={Combat}
+          options={{
+            headerShown: false,
+          }}
+        />
+        <Stack.Screen
+          name="CombatLanding"
+          component={CombatLanding}
+          options={{
+            headerShown: false,
+          }}
+        />
+        <Stack.Screen
+          name="Menu"
+          component={Menu}
           options={{
             headerShown: false,
           }}

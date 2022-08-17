@@ -23,12 +23,13 @@ export default function updatePlayerById(
     newCon = player.con + 1;
     newExp = playerExperience - 100;
   }
-  return fetch(`https://infinite-arena-api.herokuapp.com/players/${playerId}`, {
+  return fetch(`https://endless-arena.herokuapp.com/players/${playerId}`, {
     method: 'PUT',
     headers: {'Content-Type': 'application/json'},
     body: JSON.stringify({
       id: playerId,
       name: player.name,
+      email: player.email,
       level: newLevel,
       health: newHealth,
       str: newStr,
@@ -37,9 +38,13 @@ export default function updatePlayerById(
       will: newWill,
       con: newCon,
       exp: newExp,
-      weaponId: player.weaponId,
-      shieldId: player.shieldId,
-      armorId: player.armorId,
+      rightWeapon: player.rightWeapon,
+      leftWeapon: player.leftWeapon,
+      armor: player.armor,
+      equippedSkill1: player.equippedSkill1,
+      equippedSkill2: player.equippedSkill2,
+      equippedSkill3: player.equippedSkill3,
+      equippedSkill4: player.equippedSkill4,
     }),
   })
     .then(response => response.json())

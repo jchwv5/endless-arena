@@ -1,18 +1,23 @@
+/* eslint-disable react-hooks/exhaustive-deps */
+/* eslint-disable react-hooks/rules-of-hooks */
 /* eslint-disable prettier/prettier */
 import React, { useEffect, useState, useRef } from 'react';
 import { StyleSheet, Text, Image, View, Button, Modal, Alert, ScrollView, TouchableHighlight } from 'react-native';
 import { Colors } from 'react-native/Libraries/NewAppScreen';
-import Potion from '../../assets/Potion.png';
-import Scroll from '../../assets/Scroll.png';
 import Flee from '../../assets/Flee.png';
 import fetchMonsterById from '../monster/MonsterService';
 import monsterImages from '../monster/MonsterImageService';
 import updatePlayerById from '../player/UpdatePlayerService';
 import lootCheck from './LootCheck';
 import fetchLootTableByMonsterId from './LootService';
-import updateInventoryById from '../../inventory/UpdateInventoryService';
+import fetchInventoryByPlayerId from '../inventory/InventoryService';
 import itemImages from '../equipment/ItemImages';
-import { v4 as uuidv4 } from 'uuid';
+import SkillsModal from '../skills/SkillsModal';
+import useSkill from '../skills/UseSkill';
+import { calculateDamage, endPlayerTurn } from './CombatHelpers';
+import { reduceStatusDurations, stunCheck } from './StatusHelpers';
+import ImageBackground from 'react-native/Libraries/Image/ImageBackground';
+import statusImages from './StatusImageService';
 
 
 const styles = StyleSheet.create({
@@ -66,7 +71,7 @@ const styles = StyleSheet.create({
     color: Colors.white,
     marginTop: 25,
     textAlign: 'center',
-    marginBottom: 50,
+    marginBottom: 10,
   },
   playerHealthBar: {
     color: Colors.white,
@@ -91,12 +96,16 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
+  inventoryElement: {
+
+  },
   fleeContainer: {
     flex: 1,
     justifyContent: 'right',
     padding: 8,
     flexDirection: 'row',
     alignItems: 'center',
+    marginRight: 10,
   },
   attackButton: {
     marginHorizontal: 75,
@@ -156,12 +165,28 @@ const styles = StyleSheet.create({
     fontSize: 8,
     textAlign: 'center',
   },
+  statusIconContainer: {
+    height: 20,
+    marginBottom: 10,
+  },
+  statusIcon: {
+    alignSelf: 'center',
+    marginTop: 10,
+    height: 15,
+    width: 15,
+  },
+  statusDurationText: {
+    alignSelf: 'center',
+    color: '#ff0000',
+    fontSize: 10,
+  },
 });
 
 const Combat = ({ route, navigation }) => {
   const [fleeModalVisible, setFleeModalVisible] = useState(false);
   const [lootModalVisible, setLootModalVisible] = useState(false);
-  const {player, weapon, shield, armor, inventoryItems, setPlayer, setInventoryItems} = route.params;
+  const [skillModalVisible, setSkillModalVisible] = useState(false);
+  const {player, rightWeapon, leftWeapon, armor, setPlayer, equippedSkill1, equippedSkill2, equippedSkill3, equippedSkill4, inventoryItems, setInventoryItems} = route.params;
   const [combatMessages, setCombatMessages] = useState([]);
   const [monster, setMonster] = useState({});
   const [playerLevel, setPlayerLevel] = useState(0);
@@ -179,7 +204,12 @@ const Combat = ({ route, navigation }) => {
   const [monsterTurn, setMonsterTurn] = useState(false);
   const [lootTable, setLootTable] = useState([]);
   const [loot, setLoot] = useState([]);
-  const [lootNames, setLootNames] = useState([]);
+  const [playerStatuses] = useState([]);
+  const [monsterStatuses] = useState([]);
+  const [equippedSkill1Cooldown, setEquippedSkill1Cooldown] = useState(0);
+  const [equippedSkill2Cooldown, setEquippedSkill2Cooldown] = useState(0);
+  const [equippedSkill3Cooldown, setEquippedSkill3Cooldown] = useState(0);
+  const [equippedSkill4Cooldown, setEquippedSkill4Cooldown] = useState(0);
   const scrollViewRef = useRef();
 
   function randomIntFromInterval(min, max) {
@@ -187,17 +217,19 @@ const Combat = ({ route, navigation }) => {
   }
 
   useEffect(() => {
+    fetchInventoryByPlayerId(setInventoryItems, player.id);
     setPlayerLevel(player.level);
     setPlayerExperience(player.exp);
     setPlayerAtk(Math.round((player.str - 1) / 2));
     setPlayerDef(Math.round((player.con - 1) / 2));
     setPlayerMaxHealth(player.health);
-  }, [player.con, player.exp, player.health, player.level, player.name, player.str]);
+  }, [player.con, player.exp, player.health, player.id, player.level, player.name, player.str]);
 
   useEffect(() => {
     const monsterId = randomIntFromInterval(1, 5);
     fetchMonsterById(setMonster, monsterId);
     fetchLootTableByMonsterId(setLootTable, monsterId);
+    monsterStatuses.length = 0;
   }, [killCount]);
 
   useEffect(() => {
@@ -213,10 +245,11 @@ const Combat = ({ route, navigation }) => {
 
   useEffect(() => {
     if (monsterTurn === true && monsterHealth >= 1) {
-      setMonsterTurn(false);
-      let damage = (monster.atk - (playerDef + armor.def + shield.def));
+      scrollViewRef.current.scrollToEnd({ animated: true });
+      let isStunned = stunCheck(monsterStatuses, monster.name, combatMessages);
+      if (!isStunned) {let damage = (monster.atk - (playerDef + armor.def + leftWeapon.def));
       const blockCheck = Math.floor(Math.random() * 101);
-      if (blockCheck <= shield.blockChance) {
+      if (blockCheck <= leftWeapon.blockChance) {
         damage = Math.round(damage / 2);
         combatMessages.push(<Text>{player.name} blocked {monster.name}'s attack!'{'\n'}</Text>);
       }
@@ -225,7 +258,10 @@ const Combat = ({ route, navigation }) => {
       }
       setPlayerHealth(playerHealth - damage);
       addCombatMessage(monster.name, 'attacked', player.name, damage);
-      setPlayerTurn(true);
+    }
+    if (monsterStatuses.length > 0){reduceStatusDurations(monsterStatuses);}
+    setMonsterTurn(false);
+    setPlayerTurn(true);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [monsterHealth, monsterTurn, playerHealth]);
@@ -234,7 +270,7 @@ const Combat = ({ route, navigation }) => {
     if (monsterHealth <= 0) {
       Alert.alert(`You defeated ${monster.name}`);
       setMonsterTurn(false);
-      lootCheck(monster.commonLootTableRolls, lootTable, loot);
+      lootCheck(player, monster.commonLootTableRolls, lootTable, loot, inventoryItems, setInventoryItems);
       setMonsterHealth(monsterMaxHealth);
       setKillCount(killCount + 1);
       setPlayerExperience(playerExperience + monster.exp);
@@ -278,18 +314,26 @@ const Combat = ({ route, navigation }) => {
   const playerAttack = () => {
     if (playerTurn === true){
     let attackMessage = 'attacked';
-    const critCheck = Math.floor(Math.random() * 101);
-    let weaponDamage = Math.floor(Math.random() * (weapon.maxAttack - weapon.minAttack + 1) + weapon.minAttack);
-    if (critCheck <= weapon.critChance) {
-      weaponDamage = weaponDamage * 2;
-      attackMessage = 'critically hit';
+    const attackResult = (calculateDamage(player, rightWeapon));
+    setMonsterHealth(monsterHealth - (attackResult.damage  - monster.def));
+    if (attackResult.critResult) {
+      attackMessage = 'critically hit ';
     }
-    const damage = (playerAtk + weaponDamage) - monster.def;
-    setMonsterHealth(monsterHealth - damage);
-    addCombatMessage(player.name, attackMessage, monster.name, damage);
-    setPlayerTurn(false);
-    setMonsterTurn(true);
-  }
+    addCombatMessage(player.name, attackMessage, monster.name, attackResult.damage);
+    endPlayerTurn(
+      equippedSkill1Cooldown,
+      setEquippedSkill1Cooldown,
+      equippedSkill2Cooldown,
+      setEquippedSkill2Cooldown,
+      equippedSkill3Cooldown,
+      setEquippedSkill3Cooldown,
+      equippedSkill4Cooldown,
+      setEquippedSkill4Cooldown,
+      playerStatuses,
+      setPlayerTurn,
+      setMonsterTurn,
+      );
+    }
   };
 
   const playerSpell = () => {
@@ -316,26 +360,6 @@ const Combat = ({ route, navigation }) => {
     }
   };
 
-  const gatherLoot = () => {
-      for (const entry of loot) {
-        lootNames.push(entry.name);
-        const found = inventoryItems.some(inventoryItem => {
-          if (inventoryItem.item.id === entry.id){
-            inventoryItem.quantity = (inventoryItem.quantity + 1);
-            return true;
-          }
-        });
-        if (!found) {inventoryItems.push({'id': uuidv4(), 'item' : entry, 'quantity': 1}
-        );}
-    }
-  };
-
-  const updateInventory = () => {
-    for (const inventoryItem of inventoryItems) {
-      updateInventoryById(inventoryItem.id, player, inventoryItem.item, inventoryItem.quantity);
-    }
-  };
-
   return (
     <ScrollView backgroundColor="black">
       <Modal
@@ -351,7 +375,7 @@ const Combat = ({ route, navigation }) => {
               style={[styles.button, styles.buttonClose]}
               onPress={() => { navigation.navigate('Loading', {
                 target: 'Landing',
-              }); updateInventory();} }
+              }); } }
             >
               <Text style={styles.textStyle}>Yes</Text>
             </TouchableHighlight>
@@ -364,6 +388,113 @@ const Combat = ({ route, navigation }) => {
           </View>
         </View>
         </Modal>
+        {skillModalVisible && <SkillsModal
+        transparent={true}
+        equippedSkill1={equippedSkill1}
+        equippedSkill1Cooldown={equippedSkill1Cooldown}
+        useSkill1={() => useSkill(
+          equippedSkill1,
+          monsterHealth,
+          setMonsterHealth,
+          playerStatuses,
+          monsterStatuses,
+          monster,
+          player,
+          rightWeapon,
+          leftWeapon,
+          setPlayerTurn,
+          setMonsterTurn,
+          combatMessages,
+          setEquippedSkill1Cooldown,
+          equippedSkill1Cooldown,
+          setEquippedSkill1Cooldown,
+          equippedSkill2Cooldown,
+          setEquippedSkill2Cooldown,
+          equippedSkill3Cooldown,
+          setEquippedSkill3Cooldown,
+          equippedSkill4Cooldown,
+          setEquippedSkill4Cooldown,
+          setSkillModalVisible
+          )}
+        equippedSkill2={equippedSkill2}
+        equippedSkill2Cooldown={equippedSkill2Cooldown}
+        useSkill2={() => useSkill(
+          equippedSkill2,
+          monsterHealth,
+          setMonsterHealth,
+          playerStatuses,
+          monsterStatuses,
+          monster,
+          player,
+          rightWeapon,
+          leftWeapon,
+          setPlayerTurn,
+          setMonsterTurn,
+          combatMessages,
+          setEquippedSkill2Cooldown,
+          equippedSkill1Cooldown,
+          setEquippedSkill1Cooldown,
+          equippedSkill2Cooldown,
+          setEquippedSkill2Cooldown,
+          equippedSkill3Cooldown,
+          setEquippedSkill3Cooldown,
+          equippedSkill4Cooldown,
+          setEquippedSkill4Cooldown,
+          setSkillModalVisible
+          )}
+        equippedSkill3={equippedSkill3}
+        equippedSkill3Cooldown={equippedSkill3Cooldown}
+        useSkill3={() => useSkill(
+          equippedSkill3,
+          monsterHealth,
+          setMonsterHealth,
+          playerStatuses,
+          monsterStatuses,
+          monster,
+          player,
+          rightWeapon,
+          leftWeapon,
+          setPlayerTurn,
+          setMonsterTurn,
+          combatMessages,
+          setEquippedSkill3Cooldown,
+          equippedSkill1Cooldown,
+          setEquippedSkill1Cooldown,
+          equippedSkill2Cooldown,
+          setEquippedSkill2Cooldown,
+          equippedSkill3Cooldown,
+          setEquippedSkill3Cooldown,
+          equippedSkill4Cooldown,
+          setEquippedSkill4Cooldown,
+          setSkillModalVisible
+          )}
+        equippedSkill4={equippedSkill4}
+        equippedSkill4Cooldown={equippedSkill4Cooldown}
+        useSkill4={() => useSkill(
+          equippedSkill4,
+          monsterHealth,
+          setMonsterHealth,
+          playerStatuses,
+          monsterStatuses,
+          monster,
+          player,
+          rightWeapon,
+          leftWeapon,
+          setPlayerTurn,
+          setMonsterTurn,
+          combatMessages,
+          setEquippedSkill4Cooldown,
+          equippedSkill1Cooldown,
+          setEquippedSkill1Cooldown,
+          equippedSkill2Cooldown,
+          setEquippedSkill2Cooldown,
+          equippedSkill3Cooldown,
+          setEquippedSkill3Cooldown,
+          equippedSkill4Cooldown,
+          setEquippedSkill4Cooldown,
+          setSkillModalVisible
+          )}
+        onClose={() => setSkillModalVisible(false)} />}
         <Modal
         transparent={true}
         visible={lootModalVisible}
@@ -376,10 +507,10 @@ const Combat = ({ route, navigation }) => {
               <Text style={styles.quantityLabel}>{lootItem.quantity}</Text>
               <Image
                 style={styles.itemImage}
-                source={itemImages(lootItem.name)}
+                source={itemImages(lootItem.item.name)}
               />
-              <Text style={styles.itemName} key={lootItem.id}>
-                {lootItem.name}
+              <Text style={styles.itemName} key={lootItem.item.id}>
+                {lootItem.item.name}
               </Text>
             </View>
           ))}
@@ -398,10 +529,25 @@ const Combat = ({ route, navigation }) => {
           {combatMessages}
         </Text>
       </ScrollView>
-      { loot.length === 0 && <View>
+      {loot.length === 0 && <View>
         <Text style={styles.monsterName}>
           {monster.name}
         </Text>
+      <View style={styles.statusIconContainer}>
+      {monsterStatuses.length > 0 && <View>
+        {monsterStatuses.map(monsterStatus => (
+          <ImageBackground
+            source={statusImages(monsterStatus.name)}
+            style={styles.statusIcon}
+            >
+            <Text style={styles.statusDurationText}>
+              {monsterStatus.duration}
+            </Text>
+          </ImageBackground>
+        ))}
+      </View>
+         }
+         </View>
         <View style={styles.monster}>
           <Image
             style={styles.monster}
@@ -412,13 +558,28 @@ const Combat = ({ route, navigation }) => {
       { loot.length > 0 && <View>
         <View style={styles.monster}>
         <TouchableHighlight
-            onPress={() => { gatherLoot(); setLootModalVisible(!lootModalVisible); } }>
+            onPress={() => { setLootModalVisible(!lootModalVisible); } }>
           <Image
             style={styles.monster}
             source={require('../../assets/Loot.png')} />
         </TouchableHighlight>
         </View>
       </View>}
+      <View style={styles.statusIconContainer}>
+      {playerStatuses.length > 0 && <View>
+        {playerStatuses.map(playerStatus => (
+          <ImageBackground
+            source={statusImages(playerStatus.name)}
+            style={styles.statusIcon}
+            >
+            <Text style={styles.statusDurationText}>
+              {playerStatus.duration}
+            </Text>
+          </ImageBackground>
+        ))}
+        </View>
+         }
+      </View>
       <View style={styles.attackButton}>
         <Button
           title="Attack"
@@ -437,27 +598,26 @@ const Combat = ({ route, navigation }) => {
           onPress={() => playerSpell()} />
       </View>
       <View style={styles.attackButton}>
+        <Button
+          title="Skill"
+          color="#FF00FF"
+          onPress={() => setSkillModalVisible(!skillModalVisible)} />
+      </View>
+      <View style={styles.attackButton}>
         <Text style={styles.playerName}>{player.name} - Level {player.level}</Text>
         <Text style={styles.playerHealthBar}>{playerHealth}/{playerMaxHealth}</Text>
         <Text style={styles.playerExperienceBar}>{playerExperience}/100</Text>
       </View>
       <View style={styles.inventoryContainer}>
-        <Image
-          source={Potion}
-          style={styles.potion} />
-        <Text style={styles.inventory}>x{potionCount}</Text>
-        <Image
-          source={Scroll}
-          style={styles.scroll} />
-        <Text style={styles.inventory}>x{scrollCount}</Text>
-      </View>
-      <View style={styles.inventoryContainer}>
-      <TouchableHighlight
-            onPress={() => setFleeModalVisible(!fleeModalVisible)}>
+        <View />
+        <View>
+        <TouchableHighlight
+          onPress={() => setFleeModalVisible(!fleeModalVisible)}>
         <Image
           source={Flee}
           style={styles.flee} />
       </TouchableHighlight>
+      </View>
       </View>
     </ScrollView>
   );

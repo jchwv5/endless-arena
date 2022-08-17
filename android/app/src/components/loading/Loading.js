@@ -1,6 +1,8 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 import React, {useEffect, useState} from 'react';
 import {ActivityIndicator, StyleSheet, View} from 'react-native';
-import fetchInventoryByPlayerId from '../../inventory/InventoryService';
+import {useFocusEffect} from '@react-navigation/native';
+import fetchInventoryByPlayerId from '../inventory/InventoryService';
 import fetchPlayerByEmail from '../player/FetchPlayerService';
 const styles = StyleSheet.create({
   container: {
@@ -19,45 +21,55 @@ const Loading = ({route, navigation}) => {
   const {target} = route.params;
   const [player, setPlayer] = useState(undefined);
   const [inventoryItems, setInventoryItems] = useState(undefined);
-  const [weapon, setWeapon] = useState(undefined);
-  const [shield, setShield] = useState(undefined);
-  const [armor, setArmor] = useState(undefined);
-  const [done, setDone] = useState(false);
+  const [equippedSkill1, setEquippedSkill1] = useState(undefined);
+  const [equippedSkill2, setEquippedSkill2] = useState(undefined);
+  const [equippedSkill3, setEquippedSkill3] = useState(undefined);
+  const [equippedSkill4, setEquippedSkill4] = useState(undefined);
+  const [loadPlayerDone, setLoadPlayerDone] = useState(undefined);
+  const [loadInventoryDone, setLoadInventoryDone] = useState(undefined);
 
-  useEffect(() => {
-    fetchPlayerByEmail(
-      setPlayer,
-      setWeapon,
-      setShield,
-      setArmor,
-      setDone,
-      'jchwv5@gmail.com',
-    );
-  }, []);
+  useFocusEffect(
+    React.useCallback(() => {
+      fetchPlayerByEmail(setPlayer, setLoadPlayerDone, 'jchwv5@gmail.com');
+    }, []),
+  );
+
+  useFocusEffect(
+    React.useCallback(() => {
+      if (player !== undefined && (target === 'Combat' || 'Landing')) {
+        fetchInventoryByPlayerId(
+          setInventoryItems,
+          setLoadInventoryDone,
+          player.id,
+        );
+      }
+    }, [loadPlayerDone]),
+  );
 
   useEffect(() => {
     if (player !== undefined) {
-      fetchInventoryByPlayerId(setInventoryItems, player.id);
+      setEquippedSkill1({skill: player.equippedSkill1, cooldown: 0});
+      setEquippedSkill2({skill: player.equippedSkill2, cooldown: 0});
+      setEquippedSkill3({skill: player.equippedSkill3, cooldown: 0});
+      setEquippedSkill4({skill: player.equippedSkill4, cooldown: 0});
     }
-  }, [player]);
+  }, [loadPlayerDone]);
 
   useEffect(() => {
-    if (target === 'Character' || 'Combat' || 'Landing') {
-      if (
-        player !== undefined &&
-        armor !== undefined &&
-        weapon !== undefined &&
-        shield !== undefined &&
-        inventoryItems !== undefined
-      ) {
+    if (target === 'Combat' || 'Landing') {
+      if (player !== undefined && inventoryItems !== undefined) {
         navigation.navigate(target, {
           player: player,
-          weapon: weapon,
-          shield: shield,
-          armor: armor,
+          rightWeapon: player.rightWeapon,
+          leftWeapon: player.leftWeapon,
+          armor: player.armor,
           inventoryItems: inventoryItems,
-          setPlayer: setPlayer,
           setInventoryItems: setInventoryItems,
+          equippedSkill1: equippedSkill1,
+          equippedSkill2: equippedSkill2,
+          equippedSkill3: equippedSkill3,
+          equippedSkill4: equippedSkill4,
+          setPlayer: setPlayer,
         });
       }
     }
@@ -66,7 +78,7 @@ const Loading = ({route, navigation}) => {
         navigation.navigate(target, {inventoryItems: inventoryItems});
       }
     }
-  }, [armor, done, inventoryItems, navigation, player, shield, target, weapon]);
+  }, [loadPlayerDone, loadInventoryDone, player, inventoryItems]);
 
   return (
     <View style={[styles.container, styles.horizontal]}>

@@ -1,28 +1,23 @@
 import React from 'react';
-import {
-  StyleSheet,
-  Text,
-  ScrollView,
-  TouchableHighlight,
-  Image,
-} from 'react-native';
+import {StyleSheet, Text, TouchableHighlight, View, Image} from 'react-native';
 import {Colors} from 'react-native/Libraries/NewAppScreen';
 import Back from '../../assets/Back.png';
 
 const styles = StyleSheet.create({
+  statsMenu: {
+    marginTop: 10,
+    marginHorizontal: 5,
+    backgroundColor: 'blue',
+    borderRadius: 25,
+    borderWidth: 5,
+    borderColor: 'white',
+  },
   container: {
     flex: 1,
     flexDirection: 'row',
     flexWrap: 'wrap',
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  menuPics: {
-    height: 180,
-    width: 180,
-    margin: 10,
-    marginBottom: 15,
-    marginTop: 25,
   },
   labels: {
     color: Colors.white,
@@ -38,19 +33,17 @@ const styles = StyleSheet.create({
   },
 });
 
-const CharacterScreen = ({route, navigation}) => {
-  const {player, weapon, shield, armor} = route.params;
+const CharacterScreen = props => {
+  const {player} = props;
+  const {characterModalVisible} = props;
+  const {setCharacterModalVisible} = props;
   return (
-    <ScrollView backgroundColor="black">
+    <View style={styles.statsMenu}>
       <TouchableHighlight
-        onPress={() =>
-          navigation.navigate('Landing', {
-            player: player,
-            weapon: weapon,
-            shield: shield,
-            armor: armor,
-          })
-        }>
+        style={[styles.button, styles.buttonClose]}
+        onPress={() => {
+          setCharacterModalVisible(!characterModalVisible);
+        }}>
         <Image style={styles.backIcon} source={Back} />
       </TouchableHighlight>
       <Text style={styles.labels}>{player.name}</Text>
@@ -62,7 +55,7 @@ const CharacterScreen = ({route, navigation}) => {
       <Text style={styles.labels}>Willpower - {player.will}</Text>
       <Text style={styles.labels}>Constitution - {player.con}</Text>
       <Text style={styles.labels}>Experience - {player.exp}/100</Text>
-    </ScrollView>
+    </View>
   );
 };
 
